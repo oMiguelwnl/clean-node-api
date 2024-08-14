@@ -100,6 +100,7 @@ describe('signUp controller', () => {
     expect(httpResponse.statusCode).toBe(400)
     expect(httpResponse.body).toEqual(new InvalidParamError('passwordConfirmation'))
   })
+
   it('should return 400 if no password confirmation is provided', () => {
     const { sut } = makeSut()
     const httpRequest = {
@@ -151,6 +152,7 @@ describe('signUp controller', () => {
       password: 'any_password'
     })
   })
+
   it('should call EmailValidator with correct email', () => {
     const { sut , emailValidatorStub } = makeSut()
 
@@ -186,6 +188,7 @@ describe('signUp controller', () => {
     expect(httpResponse.statusCode).toBe(500)
     expect(httpResponse.body).toEqual(new ServerError())
   })
+
   it('should return 500 if EmailValidator throws', () => {
     const { sut, emailValidatorStub } = makeSut()
 
@@ -204,5 +207,26 @@ describe('signUp controller', () => {
     const httpResponse = sut.handle(httpRequest)
     expect(httpResponse.statusCode).toBe(500)
     expect(httpResponse.body).toEqual(new ServerError())
+  })
+
+  it('should return 200 if valid data is provided', () => {
+    const { sut } = makeSut()
+
+    const httpRequest = {
+      body: {
+        name: 'valid_name',
+        email: 'valid_email@email.com',
+        password: 'valid_password',
+        passwordConfirmation: 'valid_password'
+      }
+    }
+    const httpResponse = sut.handle(httpRequest)
+    expect(httpResponse.statusCode).toBe(200)
+    expect(httpResponse.body).toEqual({
+      id: 'valid_id',
+      name: 'valid_name',
+      email: 'valid_email@email.com',
+      password: 'valid_password'
+    })
   })
 })
