@@ -1,10 +1,5 @@
-import { type Encrypter } from './db-add-account-protocols'
+import { type AccountModel, type AddAccountModel, type Encrypter, type AddAccountRepository } from './db-add-account-protocols'
 import { DBAddAccount } from './db-add-account'
-
-interface SutTypes {
-  sut: DBAddAccount
-  encrypterStub: Encrypter
-}
 
 const makeEncrypter = (): Encrypter => {
   class EncrypterStub implements Encrypter {
@@ -15,11 +10,33 @@ const makeEncrypter = (): Encrypter => {
   return new EncrypterStub()
 }
 
+const makeAddAccountRepository = (): AddAccountRepository => {
+  class AddAccountRepositoryStub implements AddAccountRepository {
+    async add (accountData: AddAccountModel): Promise<AccountModel> {
+      const fakeAccount = {
+        id: 'valid_id',
+        name: 'valid_name',
+        email: 'valid_email',
+        password: 'hashed_password'
+      }
+      return new Promise(resolve => { resolve(fakeAccount) })
+    }
+  }
+  return new AddAccountRepositoryStub()
+}
+
+interface SutTypes {
+  sut: DBAddAccount
+  encrypterStub: Encrypter
+  AddAccountRepositoryStub: AddAccountRepository
+}
+
 const makeSut = (): SutTypes => {
   const encrypterStub = makeEncrypter()
-  const sut = new DBAddAccount(encrypterStub)
+  const AddAccountRepositoryStub = makeAddAccountRepository()
+  const sut = new DBAddAccount(encrypterStub, AddAccountRepositoryStub)
   return {
-    sut, encrypterStub
+    sut, encrypterStub, AddAccountRepositoryStub
   }
 }
 
@@ -46,5 +63,21 @@ describe('DBAddAcount Usecase', () => {
     }
     const promise = sut.add(accountData)
     await expect(promise).rejects.toThrow()
+  })
+
+  test('Should call AddAccountRepository with correct values', async () => {
+    const { sut, AddAccountRepositoryStub } = makeSut()
+    const addSpy = jest.spyOn(AddAccountRepositoryStub, 'add')
+    const accountData = {
+      name: 'valid_name',
+      email: 'valid_email',
+      password: 'valid_password'
+    }
+    await sut.add(accountData)
+    expect(addSpy).toHaveBeenCalledWith({
+      name: 'valid_name',
+      email: 'valid_email',
+      password: 'hashed_password'
+    })
   })
 })
